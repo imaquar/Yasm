@@ -41,10 +41,10 @@ After running this command, you should be able to access the app by visiting htt
 If you need to stop the running container:
 
 ```bash
-docker stop yasm
+docker stop <name of container>
 ```
 To remove the container:
 
 ```bash
-docker rm yasm
+docker rm <name of container>
 ```
