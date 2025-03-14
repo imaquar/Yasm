@@ -1,0 +1,27 @@
+{% extends "network/layout.html" %}
+{% load widget_tweaks %}
+
+{% block body %}
+
+    <form method="post" enctype="multipart/form-data">
+        <h1>Register</h1>
+        {% if message %}
+            <div>{{ message }}</div>
+        {% endif %}
+        {% csrf_token %}
+        <div class="registration-form-inputs">
+            {% render_field user_form.first_name class="login-registration-input" placeholder="Name" %}
+            {% render_field user_form.username class="login-registration-input" placeholder="Username" %}
+            {% render_field user_form.email class="login-registration-input" placeholder="Email" %}
+            {% render_field user_form.password1 class="login-registration-input" placeholder="Password" %}
+            {% render_field user_form.password2 class="login-registration-input" placeholder="Confirmation" %}
+            {% render_field user_form.image style="border: 1px solid var(--text-color); width: 219px" %}
+        </div>
+        <button class="submit-button" style="display: flex; margin-top: 15px;">Register</button>
+    </form>
+
+    <div class="form-bottom-message">
+        Already have an account? 
+        <b><a href="{% url 'login' %}"> Log In.</a></b>
+    </div>
+{% endblock %}

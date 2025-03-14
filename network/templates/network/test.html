@@ -1,0 +1,13 @@
+{% extends "network/layout.html" %}
+{% load widget_tweaks %}
+
+
+{% block body %}
+
+    <form method="POST">
+        {% csrf_token %}
+        
+        <button>Submit</button>
+    </form>
+
+{% endblock %}

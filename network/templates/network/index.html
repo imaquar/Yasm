@@ -1,0 +1,285 @@
+{% extends "network/layout.html" %}
+{% load widget_tweaks %}
+
+{% block body %}
+
+    {% if request.path == "/" %}
+        <h1>
+            <a href="{% url 'index' %}">All Posts</a>
+        </h1>
+    {% elif request.path == "/following" %}
+        <h1>
+            <a href="{% url 'following' %}">Following</a>
+        </h1>
+    {% endif %}
+
+    {% if user.is_authenticated and post_form %}
+        <div id="post-form-div">
+            <form method="POST">
+                {% csrf_token %}
+                {% render_field post_form.text placeholder="Start typing..." class="text-area" id="text-area-post" oninput="handleTextArea(this)" onfocus="handleTexArea(this)" %}
+                <button class="submit-button">Post</button>
+            </form>
+        </div>
+    {% elif req_user %}
+        <div class="profile-grid">
+            {% if req_user.image %}
+                <img class="profile-img" src="{{ req_user.image.url }}"/>
+            {% endif %}
+            <div class="profile-title">
+                {{ req_user.first_name }}
+                {% if request.user.is_authenticated %}
+                    {% if request.user != req_user %}
+                        <h5>
+                            <button class="profile-button" onclick="handleFollow(this, '{{ req_user.id }}')">
+                                {% if user in req_user.followers.all %}
+                                    <div>Unfollow</div>
+                                    <i class="bi bi-person-dash"></i>
+                                {% else %}
+                                    <div>Follow</div>
+                                    <i class="bi bi-person-add"></i>    
+                                {% endif %}
+                            </button>
+                        </h5>
+                    {% else %}
+                        <h5>
+                            <button class="profile-button" onclick="toggleUpdateProfileSection()">
+                                <div>Edit</div>
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                        </h5>
+                    {% endif %}
+                {% endif %}
+            </div>
+            <a href="{% url 'users' group='followers' obj_id=req_user.id %}" class="profile-grid-element">
+                <div  id="follower-counter">Followers: {{ req_user.followers.all.count }}</div>
+            </a>
+            <a href="{% url 'users' group='following' obj_id=req_user.id %}" class="profile-grid-element">
+                <div>Following: {{ req_user.following.all.count }}</div>
+            </a>
+            {% if req_user.bio %}
+                <div class="profile-grid-element-bio">{{ req_user.bio }}</div>
+            {% elif request.user == req_user %}
+                <form class="profile-bio-form" method="POST" onsubmit="handleUpdateProfile(event, this, '{{ req_user.id }}')">
+                    {% csrf_token %}
+                    <textarea 
+                        name="bio"
+                        id="text-area-bio"
+                        maxlength="256"
+                        placeholder="About you..."
+                        oninput="toggleProfileBioFormButton(this, '{{ req_user.id }}')"
+                    ></textarea>
+                </form>
+            {% endif %}
+        </div>
+        <form class="form-profile-grid" method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            {% if req_user.image %}
+                <div class="form-profile-image">
+                    <img src="{{ req_user.image.url }}"/>
+                    <div class="form-profile-grid-element-image">{% render_field user_update_form.image %}</div>
+                </div>
+            {% endif %}
+            <div class="form-profile-title">
+                {% render_field user_update_form.first_name placeholder="Name" %}
+                <h5>
+                    <button class="form-profile-button">
+                        <div>
+                            Save
+                        </div>
+                        <i class="bi bi-floppy"></i>
+                    </button>
+                </h5>
+            </div>
+            <div class="form-profile-grid-element">
+                {% render_field user_update_form.username placeholder="Username" %}
+            </div>
+            <div class="form-profile-grid-element">{% render_field user_update_form.email placeholder="Email" %}</div>
+            <div class="form-profile-grid-element-bio">{% render_field user_update_form.bio placeholder="About you" %}</div>
+        </form> 
+    {% endif %}
+    <div class="posts-div">
+        <div class="no-posts-message">
+            {% if not posts %}
+                {% if request.path == "/following" %}
+                Follow somebody to see their posts here.
+                {% elif req_user %}
+                    {% if req_user == request.user %}
+                        Everything you post will be here.
+                    {% else %}
+                        {{ req_user.first_name }} hasn't posted anything yet.
+                    {% endif %}
+                {% else %}
+                    Be the first one to &nbsp; <p onclick="setFocus('#text-area-post')"><b>post</b></p>.
+                {% endif %}
+            {% endif %}
+        </div>
+        {% for post in posts %}
+            <div class="post-div" id="post{{ post.id }}" 
+                onmouseover="toggleEntryButtons(this)" 
+                onmouseout="toggleEntryButtons(this)"
+            >
+                <div class="header">
+                    <div class="header-data">
+                        {% if post.author.image %}
+                            <a class="header-image" href="{% url 'profile' user_id=post.author.id %}">
+                                <img src="{{ post.author.image.url }}" />
+                            </a>
+                        {% endif %}
+                        <div class="header-data-text">
+                            <div class="header-data-text-upper">
+                                <a class="header-name" href="{% url 'profile' user_id=post.author.id %}">
+                                    <b>{{ post.author.first_name }}</b>
+                                </a>
+                                <div class="header-datetime"> ⋅ {{ post.timesince }}</div>
+                            </div>
+                            <div class="header-id">
+                                <a href="{% url 'profile' user_id=post.author.id %}">
+                                    @{{ post.author }}
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="delete-edit-buttons">
+                        {% if request.user == post.author %}
+                            <i class="bi bi-pencil" onclick="toggleEditEntrySection(this, 'post', '{{ post.id }}')"></i>
+                            <i class="bi bi-x-lg" onclick="handleDeleteEntry(this, 'post', '{{ post.id }}')"></i>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="post-body">
+                    {{ post.text }}
+                </div>
+                <div class="edit-form-div">
+                    <form method="POST" onsubmit="handleEditEntry(this, event, 'post', '{{ post.id }}')"> 
+                        <textarea
+                            name="text" 
+                            class="text-area" id="text-area-edit" 
+                            oninput="handleTextArea(this)" 
+                            onfocus="handleTextArea(this)"
+                            maxlength="1024"
+                        >
+                        </textarea>
+                        <button class="submit-button">Save</button>
+                    </form>
+                </div>
+                <div class="footer">
+                    {% if post.id in request.user.liked_posts %}
+                        <div class="like-footer-button-active" onclick='handleLike(this, "post", "{{ post.id }}")'>    
+                            <i class="bi bi-heart-fill"></i>
+                            <div class="counter">
+                                {{ post.likes_by_post.all.count }}
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="footer-button" onclick='handleLike(this, "post", "{{ post.id }}")'>  
+                            <i class="bi bi-heart"></i>
+                            <div class="counter">
+                                {{ post.likes_by_post.all.count }}
+                            </div>
+                        </div>
+                    {% endif %}
+                    <div class="footer-button" data-post_id="{{ post.id }}" onclick='toggleCommentSection(this)'>
+                        <i class="bi bi-chat"></i>
+                        <div class="counter" id="comment-counter-{{ post.id }}">
+                            {{ post.comments_by_post.all.count }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="comments-div" id="{{ post.id }}"> 
+                {% if request.user.is_authenticated %}
+                    <div id="comment-form-div">
+                    <form method="POST" class="centered-form">
+                        {% csrf_token %}
+                        {% render_field comment_form.text placeholder="Leave a comment..." class="text-area" id="text-area-comment" oninput="handleTextArea(this)" %}
+                        <input type="hidden" name="post" value="{{ post.id }}">
+                        <button class="submit-button">Comment</button>
+                    </form>
+                    </div>
+                {% endif %}
+                {% for comment in post.comments_by_post.all %}
+                    <div class="comment-div" id="comment{{ comment.id }}"
+                        onmouseover="toggleEntryButtons(this)" 
+                        onmouseout="toggleEntryButtons(this)"
+                    >
+                        <div class="header">
+                            <div class="header-data">
+                                {% if comment.author.image %}
+                                    <a class="header-image" href="{% url 'profile' user_id=comment.author.id %}">
+                                        <img src="{{ comment.author.image.url }}" />
+                                    </a>
+                                {% endif %}
+                                <div class="header-data-text">
+                                    <div class="header-data-text-upper">
+                                        <a class="header-name" href="{% url 'profile' user_id=comment.author.id %}">
+                                            <b>{{ comment.author.first_name }}</b>
+                                        </a>
+                                        <div class="header-datetime"> ⋅ {{ comment.timesince }}</div>
+                                    </div>
+                                    <div class="header-id">
+                                        <a href="{% url 'profile' user_id=comment.author.id %}">
+                                            @{{ comment.author }}
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="delete-edit-buttons">
+                                {% if request.user == comment.author %}
+                                    <i class="bi bi-pencil" onclick="toggleEditEntrySection(this, 'comment', '{{ comment.id }}')"></i>
+                                    <i class="bi bi-x-lg" onclick="handleDeleteEntry(this, 'comment', '{{ comment.id }}')"></i>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="comment-body">
+                            {{ comment.text }}
+                        </div>
+                        <div class="edit-form-div">
+                            <form method="POST" onsubmit="handleEditEntry(this, event, 'comment', '{{ comment.id }}')">
+                                <textarea 
+                                    name="text" 
+                                    class="text-area" id="text-area-edit" 
+                                    oninput="handleTextArea(this)" 
+                                    onfocus="handleTextArea(this)"
+                                    maxlength="512"
+                                >
+                                </textarea>
+                                <button class="submit-button">Save</button>
+                            </form>
+                        </div>
+                        <div class="footer">
+                            <div class="footer-button" onclick='handleLike(this, "comment", "{{ comment.id }}")'>
+                                {% if comment.id in request.user.liked_comments %}
+                                    <i class="bi bi-heart-fill"></i>
+                                {% else %}
+                                    <i class="bi bi-heart"></i>
+                                {% endif %}
+                                <div class="counter">
+                                    {{ comment.likes_by_comment.all.count }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endfor %}
+    </div>
+    {% if posts.paginator.num_pages > 1%}
+        <div class="pagination">
+            {% if posts.has_previous %}
+                <a href="?page={{ posts.previous_page_number }}">
+                    <i class="bi bi-caret-left"></i>Previous page
+                </a>
+            {% endif %}
+            
+            Page {{ posts.number }} of {{ posts.paginator.num_pages }}
+
+            {% if posts.has_next %}
+                <a href="?page={{ posts.next_page_number }}">
+                    Next page<i class="bi bi-caret-right"></i>
+                </a>
+            {% endif %}
+        </div>
+    {% endif %}
+    
+{% endblock %}
