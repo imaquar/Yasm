@@ -37,7 +37,7 @@ docker run -p 8000:8000 yasm
 After running this command, you should be able to access the app by visiting http://localhost:8000 in your web browser.
 
 ---
-##Stopping & removing YASM. container
+## Stopping & removing YASM. container
 If you need to stop the running container:
 
 ```bash
