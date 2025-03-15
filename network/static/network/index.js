@@ -22,7 +22,7 @@ function handleLike(button, entryType, entryId) {
     const likeIcon = button.children[0];
     const likeCounter = button.children[1];
 
-    fetch(`http://127.0.0.1:8000/handlelike/${entryType}/${entryId}`)
+    fetch(`http://localhost:8000/handlelike/${entryType}/${entryId}`)
     .then((response) => {
         if (response.redirected) {
             window.location.replace(response.url);
@@ -82,7 +82,7 @@ function toggleEntryButtons(entry) {
 function handleDeleteEntry(button, entryType, entryId) {
     const entry = button.parentElement.parentElement.parentElement;
 
-    fetch(`http://127.0.0.1:8000/delete/${entryType}/${entryId}`)
+    fetch(`http://localhost:8000/delete/${entryType}/${entryId}`)
     .then(() => {
         entry.style.display = "none"
         if (entryType == "post") {
@@ -101,7 +101,7 @@ function handleEditEntry(editForm, event, entryType, entryId) {
     const entryBody = editForm.parentElement.parentElement.children[1];
     const editFormDiv = editForm.parentElement;
 
-    fetch(`http://127.0.0.1:8000/edit/${entryType}/${entryId}`, {
+    fetch(`http://localhost:8000/edit/${entryType}/${entryId}`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -121,7 +121,7 @@ function handleFollow(button, reqUserId) {
     const followIcon = button.children[1];
     const followerCounter = document.getElementById("follower-counter");
     
-    fetch(`http://127.0.0.1:8000/handlefollow/${reqUserId}`)
+    fetch(`http://localhost:8000/handlefollow/${reqUserId}`)
     .then(() => {
         if (followIcon.className == "bi bi-person-add") {
             followIcon.className = "bi bi-person-dash";
@@ -188,7 +188,7 @@ function toggleUpdateProfileSection() {
 function handleUpdateProfile(event, form, userId) {
     event.preventDefault();
     const textAreaBio = form.children[1];
-    fetch(`http://127.0.0.1:8000/update/${userId}`, {
+    fetch(`http://localhost:8000/update/${userId}`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -197,6 +197,6 @@ function handleUpdateProfile(event, form, userId) {
         body: JSON.stringify({"bio": textAreaBio.value}), 
     })
         .then(() => {
-            window.location.replace(`http://127.0.0.1:8000/profile/${userId}`);
+            window.location.replace(`http://localhost:8000/profile/${userId}`);
         })
 }
